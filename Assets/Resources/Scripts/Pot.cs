@@ -1,8 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 
 public class Pot
 {
@@ -38,11 +35,12 @@ public class Pot
     // 点击事件函数
     private void OnClick()
     {
-        if (!m_CanMove)
+        if (GameManager.Instance.GameState != GameState.GamePlaying || !m_CanMove)
             return;
         AudioManager.PlaySound(ConstDefine.AUDIO_POT);
         SetHinder();
         // 移动猫
+        GameManager.Instance.CatMove();
     }
 
     // 重置
@@ -52,5 +50,11 @@ public class Pot
             m_imgPot.sprite = ResManager.Load<Sprite>(ConstDefine.SPRITE_POT1);
         m_CanMove = true;
         m_imgPot.raycastTarget = true;
+    }
+
+    // 清理
+    public void Clear()
+    {
+        GameObject.Destroy(m_imgPot.gameObject);
     }
 }

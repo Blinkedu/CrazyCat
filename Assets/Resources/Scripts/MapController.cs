@@ -2,21 +2,34 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// 地图控制器
+/// </summary>
 public class MapController
 {
     private Pot[,] m_Maps = null;
-    private int m_RowCount = 9;
-    private int m_ColCount = 9;
 
-    public MapController()
-    {
-        Reset();
-    }
-
+    public const int ROW_COUNT = 9;
+    public const int COL_COUNT = 9;
+    
+    // 重置
     public void Reset()
     {
         InitPots();
         InitHinder();
+    }
+
+    // 清理
+    public void Clear()
+    {
+        for (int i = 0; i < ROW_COUNT; i++)
+        {
+            for (int j = 0; j < COL_COUNT; j++)
+            {
+                m_Maps[i, j].Clear();
+            }
+        }
+        m_Maps = null;
     }
 
     // 根据索引计算位置
@@ -29,12 +42,12 @@ public class MapController
         if (rowIndex % 2 == 0)
         {
             // 向左偏移
-            return new Vector3(colIndex * space + startX - space / 4f, rowIndex * space + startY, 0);
+            return new Vector3(colIndex * space + startX + space / 4f, rowIndex * space + startY, 0);
         }
         else
         {
             // 向右偏移
-            return new Vector3(colIndex * space + startX + space / 4f, rowIndex * space + startY, 0);
+            return new Vector3(colIndex * space + startX - space / 4f, rowIndex * space + startY, 0);
         }
     }
 
@@ -45,36 +58,39 @@ public class MapController
         if (index.x == rowIndex && index.y == colIndex)
         {
             List<Vector2Int> tempList = GetCanMovePotIndexs(rowIndex, colIndex);
-            Vector2Int temp = tempList[0];
-            float sum = m_RowCount + m_ColCount;
-            for (int i = 0; i < tempList.Count; i++)
+            if (tempList.Count > 0)
             {
-                int x = tempList[i].x;
-                int y = tempList[i].y;
-                int tempSum = 0;
-                if (Mathf.Abs(0 - x) > Mathf.Abs(m_RowCount - 1 - x))
+                Vector2Int temp = tempList[0];
+                float sum = ROW_COUNT + COL_COUNT;
+                for (int i = 0; i < tempList.Count; i++)
                 {
-                    tempSum += Mathf.Abs(m_RowCount - 1 - x);
-                }
-                else
-                {
-                    tempSum += Mathf.Abs(0 - x);
-                }
+                    int x = tempList[i].x;
+                    int y = tempList[i].y;
+                    int tempSum = 0;
+                    if (Mathf.Abs(0 - x) > Mathf.Abs(ROW_COUNT - 1 - x))
+                    {
+                        tempSum += Mathf.Abs(ROW_COUNT - 1 - x);
+                    }
+                    else
+                    {
+                        tempSum += Mathf.Abs(0 - x);
+                    }
 
-                if (Mathf.Abs(0 - y) > Mathf.Abs(m_ColCount - 1 - y))
-                {
-                    tempSum += Mathf.Abs(m_ColCount - 1 - y);
-                }
-                else
-                {
+                    if (Mathf.Abs(0 - y) > Mathf.Abs(COL_COUNT - 1 - y))
+                    {
+                        tempSum += Mathf.Abs(COL_COUNT - 1 - y);
+                    }
+                    else
+                    {
 
-                    tempSum += Mathf.Abs(0 - y);
-                }
-                if (sum > tempSum)
-                {
-                    sum = tempSum;
-                    index.x = x;
-                    index.y = y;
+                        tempSum += Mathf.Abs(0 - y);
+                    }
+                    if (sum > tempSum)
+                    {
+                        sum = tempSum;
+                        index.x = x;
+                        index.y = y;
+                    }
                 }
             }
         }
@@ -90,7 +106,7 @@ public class MapController
          */
         int minCount = int.MaxValue;
         int potCount = 0;
-        Vector2Int targetIndex = new Vector2Int(rowIndex, colIndex);
+        Vector2Int target = new Vector2Int(rowIndex, colIndex);
         bool canMove = true;
 
         //左
@@ -106,15 +122,15 @@ public class MapController
         if (canMove && potCount < minCount)
         {
             minCount = potCount;
-            targetIndex.x = rowIndex;
-            targetIndex.y = colIndex - 1;
+            target.x = rowIndex;
+            target.y = colIndex - 1;
             //return v;
         }
 
         //右
         canMove = true;
         potCount = 0;
-        for (int i = colIndex + 1; i < m_ColCount; i++)
+        for (int i = colIndex + 1; i < COL_COUNT; i++)
         {
             if (!m_Maps[rowIndex, i].CanMove)
             {
@@ -126,15 +142,14 @@ public class MapController
         if (canMove && potCount < minCount)
         {
             minCount = potCount;
-            targetIndex.x = rowIndex;
-            targetIndex.y = colIndex + 1;
+            target.x = rowIndex;
+            target.y = colIndex + 1;
             //return v;
         }
-
         //左上
         canMove = true;
         potCount = 0;
-        for (int i = rowIndex + 1, j = (rowIndex % 2 == 0 ? colIndex : colIndex - 1); i < m_RowCount && j >= 0; i++)
+        for (int i = rowIndex + 1, j = (rowIndex % 2 == 0 ? colIndex : colIndex - 1); i < ROW_COUNT && j >= 0; i++)
         {
             if (!m_Maps[i, j].CanMove)
             {
@@ -152,13 +167,13 @@ public class MapController
             minCount = potCount;
             if (rowIndex % 2 == 0)
             {
-                targetIndex.x = rowIndex + 1;
-                targetIndex.y = colIndex;
+                target.x = rowIndex + 1;
+                target.y = colIndex;
             }
             else
             {
-                targetIndex.x = rowIndex + 1;
-                targetIndex.y = colIndex - 1;
+                target.x = rowIndex + 1;
+                target.y = colIndex - 1;
             }
             //return v;
         }
@@ -166,7 +181,7 @@ public class MapController
         //右下
         canMove = true;
         potCount = 0;
-        for (int i = rowIndex - 1, j = (rowIndex % 2 == 0 ? colIndex + 1 : colIndex); i >= 0 && j < m_ColCount; i--)
+        for (int i = rowIndex - 1, j = (rowIndex % 2 == 0 ? colIndex + 1 : colIndex); i >= 0 && j < COL_COUNT; i--)
         {
             if (!m_Maps[i, j].CanMove)
             {
@@ -184,13 +199,13 @@ public class MapController
             minCount = potCount;
             if (rowIndex % 2 == 0)
             {
-                targetIndex.x = rowIndex - 1;
-                targetIndex.y = colIndex + 1;
+                target.x = rowIndex - 1;
+                target.y = colIndex + 1;
             }
             else
             {
-                targetIndex.x = rowIndex - 1;
-                targetIndex.y = colIndex;
+                target.x = rowIndex - 1;
+                target.y = colIndex;
             }
             //return v;
         }
@@ -198,7 +213,7 @@ public class MapController
         //右上
         canMove = true;
         potCount = 0;
-        for (int i = rowIndex + 1, j = (rowIndex % 2 == 0 ? colIndex + 1 : colIndex); i < m_RowCount && j < m_ColCount; i++)
+        for (int i = rowIndex + 1, j = (rowIndex % 2 == 0 ? colIndex + 1 : colIndex); i < ROW_COUNT && j < COL_COUNT; i++)
         {
             if (!m_Maps[i, j].CanMove)
             {
@@ -217,13 +232,13 @@ public class MapController
             minCount = potCount;
             if (rowIndex % 2 == 0)
             {
-                targetIndex.x = rowIndex + 1;
-                targetIndex.y = colIndex + 1;
+                target.x = rowIndex + 1;
+                target.y = colIndex + 1;
             }
             else
             {
-                targetIndex.x = rowIndex + 1;
-                targetIndex.y = colIndex;
+                target.x = rowIndex + 1;
+                target.y = colIndex;
             }
             //return v;
         }
@@ -249,22 +264,22 @@ public class MapController
             minCount = potCount;
             if (rowIndex % 2 == 0)
             {
-                targetIndex.x = rowIndex - 1;
-                targetIndex.y = colIndex;
+                target.x = rowIndex - 1;
+                target.y = colIndex;
             }
             else
             {
-                targetIndex.x = rowIndex - 1;
-                targetIndex.y = colIndex - 1;
+                target.x = rowIndex - 1;
+                target.y = colIndex - 1;
             }
             //return v;
         }
 
-        return targetIndex;
+        return target;
     }
 
     // 获取能移动点列表
-    private List<Vector2Int> GetCanMovePotIndexs(int rowIndex, int colIndex)
+    public List<Vector2Int> GetCanMovePotIndexs(int rowIndex, int colIndex)
     {
         List<Vector2Int> potMoveList = new List<Vector2Int>();
         Vector2Int index = Vector2Int.zero;
@@ -310,7 +325,7 @@ public class MapController
     // 判断索引位置是否能够到达
     private bool IsCanMove(Vector2Int index)
     {
-        if (index.x < 0 || index.x > m_RowCount - 1 || index.y < 0 || index.y > m_ColCount - 1)
+        if (index.x < 0 || index.x > ROW_COUNT - 1 || index.y < 0 || index.y > COL_COUNT - 1)
             return false;
         return m_Maps[index.x, index.y].CanMove;
     }
@@ -319,7 +334,7 @@ public class MapController
     private void InitHinder()
     {
         // 随机障碍个数
-        int hiderCount = Random.Range(6, 13);
+        int hiderCount = Random.Range(10, 16);
         while (hiderCount > 0)
         {
             int i = Random.Range(0, 9);
@@ -359,5 +374,4 @@ public class MapController
             }
         }
     }
-
 }
